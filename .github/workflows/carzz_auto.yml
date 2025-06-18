@@ -16,7 +16,7 @@ jobs:
       - name: Send POST request to get auth_id
         id: get_auth
         run: |
-          BASE_DATE="2025-06-17"
+          BASE_DATE="2025-06-18"
           TODAY=$(date -u +"%Y-%m-%d")
           DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 86400 + 1 ))
           FILE_NUM=$(printf "%04d" $DAYS_DIFF)
