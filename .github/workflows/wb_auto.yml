@@ -1,0 +1,42 @@
+name: WB Daily
+
+on:
+  schedule:
+    - cron: '0 7 * * *'  # Run daily at 9:00 UTC
+  workflow_dispatch:     # Optional manual run
+
+jobs:
+  api-flow:
+    runs-on: ubuntu-latest
+
+    env:
+      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAE0wbXJZAQkRFaEZAidFdhYmk3V2swVE5pbG13WFQ3NUxuUS1xNFZAlRlowbU03eTl3N29OSnpLQXE5UHNMeUUxbXNYM2FPUXJYU1hPWV9FV0J3VHh2UnBKUklWRVZAHNFFJSHhncHRVeGdKTDhLaFlfUmlHcmp4NAZDZD
+
+    steps:
+      - name: Send POST request to get auth_id
+        id: get_auth
+        run: |
+          BASE_DATE="2025-06-18"
+          TODAY=$(date -u +"%Y-%m-%d")
+          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 86400 + 1 ))
+          FILE_NUM=$(printf "%03d" $DAYS_DIFF)
+          VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/wb/${FILE_NUM}.mp4?download=true"
+          VIDEO_URL="https://github.com/thetga/reels_vids/raw/refs/heads/main/carzz/${FILE_NUM}.mp4"
+          echo "video_url=$VIDEO_URL" >> $GITHUB_ENV
+          RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841474860848161/media" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
+            -d "{\"video_url\":\"$VIDEO_URL_HF\", \"media_type\":\"REELS\", \"caption\":\"You Are not behind. You are just building in silence. Let the results speak. AI or not—motivation hits when you need it most. Stay consistent. #AIMotivation #DailyDrive #ReelMotivation #MindsetMatters #DisciplineOverEverything #SelfGrowth #ArtificialWisdom #StayFocused #MorningMotivation #AIReels\"}")
+          
+          echo "Full fileNumm: $FILE_NUM"
+          echo "Full Viddd: $VIDEO_URL_HF"
+          echo "Full Response: $RESPONSE"
+          AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
+
+      - name: Wait for 300 seconds before publishing
+        run: sleep 300
+
+      - name: Make GET request to publish media
+        run: |
+          curl -X POST "https://graph.instagram.com/v23.0/17841474860848161/media_publish?access_token=$IG_ACCESS_TOKEN&creation_id=${{ env.auth_id }}"
