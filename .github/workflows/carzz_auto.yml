@@ -1,31 +1,33 @@
-name: Daily Auth Request and Follow-Up
+name: Carzz Daily
 
 on:
   schedule:
     - cron: '0 9 * * *'  # Run daily at 9:00 UTC
-  workflow_dispatch:     # Optional manual run button
+  workflow_dispatch:     # Optional manual run
 
 jobs:
   api-flow:
     runs-on: ubuntu-latest
 
+    env:
+      IG_ACCESS_TOKEN: IGAAKnOFLpOHlBZAE5OOU1uVENOekE1SFl3U0Jta1BqSmJkTEJpejN5VzQtRlY5MGwwQkIxVHB3SFh3VTh3VlJjbHdkbUx4cGdGS3VmRGpPb0Vtc1pZAcFFCYktxVWxaVkM0QXdNR1d4ajBySHFiLVN0dndScldtN0I1VGJVMjJmTQZDZD
+
     steps:
       - name: Send POST request to get auth_id
         id: get_auth
         run: |
-          RESPONSE=$(curl -s -X POST https://graph.instagram.com/v23.0/17841474765092627/media \
+          RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841474765092627/media" \
             -H "Content-Type: application/json" \
-            -H "Authorization: Bearer IGAAKnOFLpOHlBZAE5OOU1uVENOekE1SFl3U0Jta1BqSmJkTEJpejN5VzQtRlY5MGwwQkIxVHB3SFh3VTh3VlJjbHdkbUx4cGdGS3VmRGpPb0Vtc1pZAcFFCYktxVWxaVkM0QXdNR1d4ajBySHFiLVN0dndScldtN0I1VGJVMjJmTQZDZD" \
-            -d '{"video_url":"https://videos.pexels.com/video-files/32144507/13705434_1440_2560_30fps.mp4", "media_type":"REELS","caption":"This is a text"}')
+            -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
+            -d '{"video_url":"https://videos.pexels.com/video-files/32144507/13705434_1440_2560_30fps.mp4", "media_type":"REELS", "caption":"This is a text"}')
 
           echo "Full Response: $RESPONSE"
-          
-          # Extract auth_id from JSON response
-          AUTH_ID=$(echo $RESPONSE | jq -r '.id')
-          
-          # Save auth_id to environment
+          AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
           echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
 
-      - name: Make GET request with auth_id
+      - name: Wait for 120 seconds before publishing
+        run: sleep 120
+
+      - name: Make GET request to publish media
         run: |
-          curl -X GET "https://graph.instagram.com/v23.0/17841474765092627/media_publish?access_token=IGAAKnOFLpOHlBZAE5OOU1uVENOekE1SFl3U0Jta1BqSmJkTEJpejN5VzQtRlY5MGwwQkIxVHB3SFh3VTh3VlJjbHdkbUx4cGdGS3VmRGpPb0Vtc1pZAcFFCYktxVWxaVkM0QXdNR1d4ajBySHFiLVN0dndScldtN0I1VGJVMjJmTQZDZD&creation_id=${{ env.auth_id }}"
+          curl -X GET "https://graph.instagram.com/v23.0/17841474765092627/media_publish?access_token=$IG_ACCESS_TOKEN&creation_id=${{ env.auth_id }}"
