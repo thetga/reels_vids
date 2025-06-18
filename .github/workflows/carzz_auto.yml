@@ -26,7 +26,9 @@ jobs:
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
             -d "{\"video_url\":\"$VIDEO_URL\", \"media_type\":\"REELS\", \"caption\":\"From 0 to legendary in seconds. #SpeedMeetsStyle #DreamMachine #NextLevelDrive #CarObsession #LuxuryDrive #CarPorn #AutoAddict #DriveInStyle\"}")
-
+          
+          echo "Full fileNumm: $FILE_NUM"
+          echo "Full Viddd: $VIDEO_URL"
           echo "Full Response: $RESPONSE"
           AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
           echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
