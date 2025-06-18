@@ -16,19 +16,20 @@ jobs:
       - name: Send POST request to get auth_id
         id: get_auth
         run: |
-          BASE_DATE="2025-06-18"
+          BASE_DATE="2025-06-17"
           TODAY=$(date -u +"%Y-%m-%d")
           DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 86400 + 1 ))
           FILE_NUM=$(printf "%04d" $DAYS_DIFF)
+          VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reelz/carzzzz/${FILE_NUM}.mp4?download=true"
           VIDEO_URL="https://github.com/thetga/reels_vids/raw/refs/heads/main/carzz/${FILE_NUM}.mp4"
           echo "video_url=$VIDEO_URL" >> $GITHUB_ENV
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841474765092627/media" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
-            -d "{\"video_url\":\"$VIDEO_URL\", \"media_type\":\"REELS\", \"caption\":\"From 0 to legendary in seconds. #SpeedMeetsStyle #DreamMachine #NextLevelDrive #CarObsession #LuxuryDrive #CarPorn #AutoAddict #DriveInStyle\"}")
+            -d "{\"video_url\":\"$VIDEO_URL_HF\", \"media_type\":\"REELS\", \"caption\":\"From 0 to legendary in seconds. #SpeedMeetsStyle #DreamMachine #NextLevelDrive #CarObsession #LuxuryDrive #CarPorn #AutoAddict #DriveInStyle\"}")
           
           echo "Full fileNumm: $FILE_NUM"
-          echo "Full Viddd: $VIDEO_URL"
+          echo "Full Viddd: $VIDEO_URL_HF"
           echo "Full Response: $RESPONSE"
           AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
           echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
