@@ -31,8 +31,8 @@ jobs:
           AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
           echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
 
-      - name: Wait for 120 seconds before publishing
-        run: sleep 120
+      - name: Wait for 300 seconds before publishing
+        run: sleep 300
 
       - name: Make GET request to publish media
         run: |
