@@ -25,7 +25,7 @@ jobs:
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841474765092627/media" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
-            -d '{"video_url":"$VIDEO_URL", "media_type":"REELS", "caption":"From 0 to legendary in seconds. #SpeedMeetsStyle #DreamMachine #NextLevelDrive #CarObsession# LuxuryDrive #CarPorn# AutoAddict #DriveInStyle"}')
+            -d "{\"video_url\":\"$VIDEO_URL\", \"media_type\":\"REELS\", \"caption\":\"From 0 to legendary in seconds. #SpeedMeetsStyle #DreamMachine #NextLevelDrive #CarObsession #LuxuryDrive #CarPorn #AutoAddict #DriveInStyle\"}"
 
           echo "Full Response: $RESPONSE"
           AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
