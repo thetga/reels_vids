@@ -36,4 +36,4 @@ jobs:
 
       - name: Make GET request to publish media
         run: |
-          curl -X GET "https://graph.instagram.com/v23.0/17841474765092627/media_publish?access_token=$IG_ACCESS_TOKEN&creation_id=${{ env.auth_id }}"
+          curl -X POST "https://graph.instagram.com/v23.0/17841474765092627/media_publish?access_token=$IG_ACCESS_TOKEN&creation_id=${{ env.auth_id }}"
