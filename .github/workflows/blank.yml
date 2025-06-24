@@ -1,0 +1,40 @@
+name: FP Auto
+
+on:
+  schedule:
+    - cron: '0 1 * * *'
+    - cron: '0 13 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
+  workflow_dispatch:     # Optional manual run
+# today=001
+jobs:
+  api-flow:
+    runs-on: ubuntu-latest
+
+    env:
+      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAE5Fbi1qRkxveWhfUGR0TlVnU2VZAWFdxckFWcjliR0tad1RPSHp4TzFGVTRKa2Q2eHJRb1BZAam1OV3ZAVdEJzbi0ybFVXVXVpM0ZAjeWNvVV9vbGVkNEdteHYyYy1MNm40ZAHFNUXRvWGwzbm05eDFZALWlIeU00NAZDZD
+
+    steps:
+      - name: Send POST request to get auth_id
+        id: get_auth
+        run: |
+          BASE_DATE="2025-06-24" 
+          TODAY=$(date -u +"%Y-%m-%d")
+          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 43200 + 1 ))
+          FILE_NUM=$(printf "%03d" $DAYS_DIFF)
+          VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/nk/${FILE_NUM}.mp4?download=true"
+          RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475466667170/media" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
+            -d "{\"video_url\":\"$VIDEO_URL_HF\", \"media_type\":\"REELS\", \"caption\":\""Love everyone, serve everyone, remember God, and tell the truth." — Neem Karoli Baba. In every moment of stillness, Maharajji's presence echoes through the heart. His teachings are simple yet profound—rooted in unconditional love, pure service, and absolute faith in the divine. Whether sitting in silence or chanting the name of Ram, we are never far from his grace. His life reminds us that the path to God is not through intellect, but through surrender, love, and truth. #NeemKaroliBaba #Maharajji #KainchiDham #HanumanBhakt #BhaktiMovement #RamRam #LoveEveryone #ServeEveryone #SpiritualWisdom #IndianSaints #DivineGrace #BhaktiYoga #SpiritualAwakening #ConsciousLiving #HinduPhilosophy #GuruKripa #PeaceWithin #Satsang #SacredIndia #DevotionalPath\"}")
+          
+          echo "Full Viddd: $VIDEO_URL_HF"
+          echo "Full Response: $RESPONSE"
+          AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
+
+      - name: Wait for 300 seconds before publishing
+        run: sleep 300
+
+      - name: Make GET request to publish media
+        run: |
+          curl -X POST "https://graph.instagram.com/v23.0/17841475466667170/media_publish?access_token=$IG_ACCESS_TOKEN&creation_id=${{ env.auth_id }}"
