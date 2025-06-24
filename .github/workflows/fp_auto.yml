@@ -5,7 +5,7 @@ on:
     - cron: '0 7 * * *'
     - cron: '0 19 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
   workflow_dispatch:     # Optional manual run
-
+# today=001
 jobs:
   api-flow:
     runs-on: ubuntu-latest
@@ -17,9 +17,9 @@ jobs:
       - name: Send POST request to get auth_id
         id: get_auth
         run: |
-          BASE_DATE="2025-06-24" #today=001
+          BASE_DATE="2025-06-24" 
           TODAY=$(date -u +"%Y-%m-%d")
-          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 86400 + 1 ))
+          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 43200 + 1 ))
           FILE_NUM=$(printf "%03d" $DAYS_DIFF)
           VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/fp/${FILE_NUM}.mp4?download=true"
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475611259667/media" \
