@@ -25,11 +25,12 @@ jobs:
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475466667170/media" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
-            -d "{\"video_url\":\"$VIDEO_URL_HF\", \"media_type\":\"REELS\", \"caption\":\""Love everyone, serve everyone, remember God, and tell the truth." — Neem Karoli Baba. In every moment of stillness, Maharajji's presence echoes through the heart. His teachings are simple yet profound—rooted in unconditional love, pure service, and absolute faith in the divine. Whether sitting in silence or chanting the name of Ram, we are never far from his grace. His life reminds us that the path to God is not through intellect, but through surrender, love, and truth. #NeemKaroliBaba #Maharajji #KainchiDham #HanumanBhakt #BhaktiMovement #RamRam #LoveEveryone #ServeEveryone #SpiritualWisdom #IndianSaints #DivineGrace #BhaktiYoga #SpiritualAwakening #ConsciousLiving #HinduPhilosophy #GuruKripa #PeaceWithin #Satsang #SacredIndia #DevotionalPath\"}")
+            -d "{\"video_url\":\"$VIDEO_URL_HF\", \"media_type\":\"REELS\", \"caption\":\"Love everyone, serve everyone, remember God, and tell the truth. — Neem Karoli Baba. In every moment of stillness, Maharajji's presence echoes through the heart. His teachings are simple yet profound—rooted in unconditional love, pure service, and absolute faith in the divine. Whether sitting in silence or chanting the name of Ram, we are never far from his grace. His life reminds us that the path to God is not through intellect, but through surrender, love, and truth. #NeemKaroliBaba #Maharajji #KainchiDham #HanumanBhakt #BhaktiMovement #RamRam #LoveEveryone #ServeEveryone #SpiritualWisdom #IndianSaints #DivineGrace #BhaktiYoga #SpiritualAwakening #ConsciousLiving #HinduPhilosophy #GuruKripa #PeaceWithin #Satsang #SacredIndia #DevotionalPath\"}")
           
           echo "Full Viddd: $VIDEO_URL_HF"
           echo "Full Response: $RESPONSE"
-          
+          AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
 
       - name: Wait for 300 seconds before publishing
         run: sleep 300
