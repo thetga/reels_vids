@@ -29,8 +29,7 @@ jobs:
           
           echo "Full Viddd: $VIDEO_URL_HF"
           echo "Full Response: $RESPONSE"
-          AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
-          echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
+          
 
       - name: Wait for 300 seconds before publishing
         run: sleep 300
