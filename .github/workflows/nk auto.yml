@@ -19,7 +19,7 @@ jobs:
         run: |
           BASE_DATE="2025-06-24" 
           TODAY=$(date -u +"%Y-%m-%d")
-          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 86400 + 1 ))
+          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / (86400/2) + 1 ))
           FILE_NUM=$(printf "%03d" $DAYS_DIFF)
           VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/nk/${FILE_NUM}.mp4?download=true"
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475466667170/media" \
