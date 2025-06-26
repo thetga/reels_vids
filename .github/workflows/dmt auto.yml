@@ -17,8 +17,8 @@ jobs:
       - name: Send POST request to get auth_id
         id: get_auth
         run: |
-          FILE_NUM=$(printf "%03d" $(( ${{ github.run_number }} - 1 )))
-          VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/fp/${FILE_NUM}.mp4?download=true"
+          FILE_NUM=$(printf "%03d" $(( ${{ github.run_number }})))
+          VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/dmt/${FILE_NUM}.mp4?download=true"
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475392002008/media" \
             -H "Content-Type: application/json" \
             -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
