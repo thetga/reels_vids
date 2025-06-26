@@ -19,8 +19,16 @@ jobs:
         run: |
           BASE_DATE="2025-06-24" 
           TODAY=$(date -u +"%Y-%m-%d")
-          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 43200 + 1 ))
-          FILE_NUM=$(printf "%03d" $DAYS_DIFF)
+
+          HOUR_NOW=$(date -u +"%H")
+          HALF=0
+          if [ "$HOUR_NOW" -ge 12 ]; then
+            HALF=1
+          fi
+          DAYS_DIFF=$(( ( $(date -d "$TODAY" +%s) - $(date -d "$BASE_DATE" +%s) ) / 86400 ))
+          FILE_NUM=$(( DAYS_DIFF * 2 + HALF + 1 ))
+          FILE_NUM=$(printf "%03d" $FILE_NUM)
+
           VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/fp/${FILE_NUM}.mp4?download=true"
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475611259667/media" \
             -H "Content-Type: application/json" \
