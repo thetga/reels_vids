@@ -1,0 +1,37 @@
+name: DMT Auto
+
+on:
+  schedule:
+    - cron: '0 7 * * *'
+    - cron: '0 19 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
+  workflow_dispatch:     # Optional manual run
+# today=001
+jobs:
+  api-flow:
+    runs-on: ubuntu-latest
+
+    env:
+      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAFBBdWIwVUY4SWI4c3JNNy1WUTdDN0xQRjhBN3g1anlTX2dSU2VFUHJzV3YwQWxXbU9Gazc1M0F0TFdtcDlTeTFaVUkxV2l0ODY0VWd1NTFxd0xoRXVseFJkd190aXFreHY1UXozME1pREhwSzM0ay1kVVNMawZDZD
+
+    steps:
+      - name: Send POST request to get auth_id
+        id: get_auth
+        run: |
+          FILE_NUM=$(printf "%03d" $(( ${{ github.run_number }} - 1 )))
+          VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/fp/${FILE_NUM}.mp4?download=true"
+          RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475392002008/media" \
+            -H "Content-Type: application/json" \
+            -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
+            -d "{\"video_url\":\"$VIDEO_URL_HF\", \"media_type\":\"REELS\", \"caption\":\"A man with purpose does not chase — he builds. Discipline, clarity, and leadership attract what chasing never will. True masculinity earns respect, commands presence, and inspires loyalty — especially from the right woman. Stay focused. Stay firm. Stay rare. ⚔️ #MasculineEnergy #ModernMan #MenOfValue #AlphaMindset #SelfMastery #FemaleLoyalty #HighValueMan #StrongMen #StoicMindset #Leadership #PurposeDriven #LoyalWoman #MentalToughness\"}")
+          
+          echo "Full Viddd: $VIDEO_URL_HF"
+          echo "Full Response: $RESPONSE"
+          AUTH_ID=$(echo "$RESPONSE" | jq -r '.id')
+          echo "auth_id=$AUTH_ID" >> $GITHUB_ENV
+
+      - name: Wait for 300 seconds before publishing
+        run: sleep 300
+
+      - name: Make GET request to publish media
+        run: |
+          curl -X POST "https://graph.instagram.com/v23.0/17841475392002008/media_publish?access_token=$IG_ACCESS_TOKEN&creation_id=${{ env.auth_id }}"
