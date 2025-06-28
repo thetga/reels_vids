@@ -16,7 +16,7 @@ jobs:
       - name: Send POST request to get auth_id
         id: get_auth
         run: |
-          FILE_NUM=$(printf "%03d" $(( ${{ github.run_number }} )))
+          FILE_NUM=$(printf "%03d" $(( ${{ github.run_number }} -6)))
           VIDEO_URL_HF="https://huggingface.co/Thetga/myModels/resolve/main/reels/nk/${FILE_NUM}.mp4?download=true"
           RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/17841475466667170/media" \
             -H "Content-Type: application/json" \
