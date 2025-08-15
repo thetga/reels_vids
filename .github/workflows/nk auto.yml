@@ -2,7 +2,7 @@ name: NK AUto
 
 on:
   schedule:
-    - cron: '0 1 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
+    - cron: '0 3 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
   workflow_dispatch:     # Optional manual run
 # today=001
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAE5Fbi1qRkxveWhfUGR0TlVnU2VZAWFdxckFWcjliR0tad1RPSHp4TzFGVTRKa2Q2eHJRb1BZAam1OV3ZAVdEJzbi0ybFVXVXVpM0ZAjeWNvVV9vbGVkNEdteHYyYy1MNm40ZAHFNUXRvWGwzbm05eDFZALWlIeU00NAZDZD
+      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAFAyNjEyTF9NZA2ZAoTXRXQVVsdEhaeG0zdk9yeXJZAYlNaRWVHemloS0w4NmVCZAzNCT2xlcUl0ak9HSE52QmFuMVVKZAzRJMmxYcUVDVWhQam5pcThzS2tzN0phblo2WWMxVWl6ZA3BCT3o5dXF5eHFtYWMzQ2p1OAZDZD
 
     steps:
       - name: Send POST request to get auth_id
