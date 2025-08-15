@@ -2,7 +2,7 @@ name: DMT Auto
 
 on:
   schedule:
-    - cron: '0 15 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
+    - cron: '0 12 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
   workflow_dispatch:     # Optional manual run
 # today=001
 jobs:
