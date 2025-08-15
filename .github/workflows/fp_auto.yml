@@ -2,7 +2,7 @@ name: FP Auto
 
 on:
   schedule:
-    - cron: '0 14 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
+    - cron: '0 12 * * *'  # Run daily at 19:00 UTC# Run daily at 9:00 UTC
   workflow_dispatch:     # Optional manual run
 # today=001
 jobs:
@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
 
     env:
-      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAE8tWDB2WmpUdGs4QmVhWlNGYzI1SVI3aGxnWWgyalhBS0xBQjNmOVhyX2dVUEZA6SGpDUGY1cFowM2psajlQbGJlcEpUVk5qQ29lbVMtSmhySnNRWkRaVVNFeG9ZAZAjhNOERQVENmR2NsYTQ1U3J5T1lxRzVYZAwZDZD
+      IG_ACCESS_TOKEN: IGAAND31vZCHPFBZAE5WWEhNTmplWkFEYnZANN1dadHppRzg1a1JCbGx3eEpLLVdJa2IyM0l0TU1scV8yYkJTRVptNWhPaVRCeVZAQNTZAHb2ExTHg4Y281bHBHOHZAGR1hOelBOTFhUZA0JKRmZAGV0hNN2RjN1RKd0VlUTV1OGhfRzEybwZDZD
 
     steps:
       - name: Send POST request to get auth_id
