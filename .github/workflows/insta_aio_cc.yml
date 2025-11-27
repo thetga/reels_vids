@@ -23,7 +23,8 @@ jobs:
       #${{ secrets.IG_SD_AT }}
       #IG_TOKEN_2: ${{ secrets.IG_TOKEN_2 }}
 
-      IG_USER_1: ${{ secrets.IG_SD_UN }}
+      IG_USER_1: "secret.diarryyy"
+      #${{ secrets.IG_SD_UN }}
       #IG_USER_2: ${{ secrets.IG_USER_2 }}
 
     steps:
