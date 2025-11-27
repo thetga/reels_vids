@@ -1,0 +1,99 @@
+name: multi-account-random-upload
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '0 9 * * *'  # daily 09:00 UTC (adjust if needed)
+
+permissions:
+  contents: write
+
+jobs:
+  upload:
+    runs-on: ubuntu-latest
+    env:
+      # Replace these 10 folder names with your actual folders (space-separated)
+      #       MP4_DIRS: "sd mp4s_b mp4s_c mp4s_d mp4s_e mp4s_f mp4s_g mp4s_h mp4s_i mp4s_j"
+
+      MP4_DIRS: "sd"
+      BRANCH: main
+
+      # export your 10 tokens and 10 user ids as secrets in the repo:
+      # IG_TOKEN_1 .. IG_TOKEN_10 and IG_USER_1 .. IG_USER_10
+      IG_TOKEN_1: ${{ secrets.IG_SD_AT }}
+      #IG_TOKEN_2: ${{ secrets.IG_TOKEN_2 }}
+
+      IG_USER_1: ${{ secrets.IG_SD_UN }}
+      #IG_USER_2: ${{ secrets.IG_USER_2 }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: install jq
+        run: sudo apt-get update && sudo apt-get install -y jq coreutils
+
+      - name: upload loop for 10 accounts
+        shell: bash
+        run: |
+          set -euo pipefail
+          IFS=' ' read -r -a DIRS <<< "${MP4_DIRS}"
+          repo="${GITHUB_REPOSITORY}"
+
+          for idx in "${!DIRS[@]}"; do
+            i=$((idx+1))
+            FOLDER="${DIRS[idx]}"
+            echo "---- account $i -> folder: $FOLDER ----"
+
+            FILES=$(git ls-files "${FOLDER}"/*.mp4 2>/dev/null || true)
+            if [ -z "$FILES" ]; then
+              echo "no mp4 in ${FOLDER}, skipping"
+              continue
+            fi
+
+            PICK=$(echo "$FILES" | shuf -n1)
+            RAW="https://raw.githubusercontent.com/${repo}/${BRANCH}/${PICK}"
+
+            TOKEN_VAR="IG_TOKEN_${i}"
+            USER_VAR="IG_USER_${i}"
+            TOKEN="${!TOKEN_VAR:-}"
+            USER="${!USER_VAR:-}"
+
+            if [ -z "$TOKEN" ] || [ -z "$USER" ]; then
+              echo "missing secret for index $i, skipping"
+              continue
+            fi
+
+            # ---- pick caption from THIS folder ----
+            CAPTION_FILE="${FOLDER}/captions.txt"
+            if [ -f "${CAPTION_FILE}" ] && [ -s "${CAPTION_FILE}" ]; then
+              CAPTION=$(shuf -n1 "${CAPTION_FILE}")
+            else
+              CAPTION="Auto upload from CI"
+            fi
+            echo "caption: ${CAPTION}"
+
+            # create media container
+            RESP=$(curl -s -w "\n%{http_code}" -X POST "https://graph.facebook.com/v17.0/${USER}/media" \
+              -d "access_token=${TOKEN}" \
+              -d "video_url=${RAW}" \
+              -d "media_type=VIDEO" \
+              --data-urlencode "caption=${CAPTION}")
+            BODY=$(echo "$RESP" | sed '$d'); CODE=$(echo "$RESP" | tail -n1)
+            if [[ "$CODE" != "200" && "$CODE" != "201" ]]; then
+              echo "create failed (HTTP $CODE): $BODY"; continue
+            fi
+            CID=$(echo "$BODY" | jq -r '.id // empty')
+            [ -n "$CID" ] || { echo "no creation id; skipping"; continue; }
+
+            # publish
+            RESP2=$(curl -s -w "\n%{http_code}" -X POST "https://graph.facebook.com/v17.0/${USER}/media_publish" \
+              -d "access_token=${TOKEN}" \
+              -d "creation_id=${CID}")
+            BODY2=$(echo "$RESP2" | sed '$d'); CODE2=$(echo "$RESP2" | tail -n1)
+            if [[ "$CODE2" != "200" && "$CODE2" != "201" ]]; then
+              echo "publish failed (HTTP $CODE2): $BODY2"; continue
+            fi
+
+            echo "success: account $i created ${CID}"
+            # optional: remove source file from repo after success
+            # git rm -f "$PICK" || true
+          done
