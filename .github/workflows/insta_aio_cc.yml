@@ -78,7 +78,7 @@ jobs:
             echo "caption: ${CAPTION}"
 
             # create media container
-            RESP=$(curl -s -w "\n%{http_code}" -X POST "https://graph.facebook.com/v17.0/${USER}/media" \
+            RESP=$(curl -s -w "\n%{http_code}" -X POST "https://graph.instagram.com/v23.0/${USER}/media" \
               -d "access_token=${TOKEN}" \
               -d "video_url=${RAW}" \
               -d "media_type=VIDEO" \
