@@ -11,21 +11,14 @@ jobs:
   upload:
     runs-on: ubuntu-latest
     env:
-      # Replace these 10 folder names with your actual folders (space-separated)
-      #       MP4_DIRS: "sd mp4s_b mp4s_c mp4s_d mp4s_e mp4s_f mp4s_g mp4s_h mp4s_i mp4s_j"
-
+      # multiple folders → each folder = 1 account
+      # MP4_DIRS: "sd mp4s_b mp4s_c ..."
       MP4_DIRS: "sd"
       BRANCH: main
 
-      # export your 10 tokens and 10 user ids as secrets in the repo:
-      # IG_TOKEN_1 .. IG_TOKEN_10 and IG_USER_1 .. IG_USER_10
-      IG_TOKEN_1: "IGAAND31vZCHPFBZAFJYM0dlZAzluamFsSko4VlZAfaWFHQWlMcEtzUTRVT3lBMWkybmxWdGw4ZAUZAtamp4c3c2eFF0elh5OFBGb2d6Yl9QbzYzdG9mOWlrb3NHWEY3MlJnZAHB0RExjZAkhhanRlaDhUZAEtMcVpRd2FwSUlVOGdVb2hiNAZDZD"
-      #${{ secrets.IG_SD_AT }}
-      #IG_TOKEN_2: ${{ secrets.IG_TOKEN_2 }}
-
-      IG_USER_1: "17841478927063471"
-      #${{ secrets.IG_SD_UN }}
-      #IG_USER_2: ${{ secrets.IG_USER_2 }}
+      # 10 tokens max (example: IG_SD_AT = token for folder sd)
+      IG_TOKEN_1: ${{ secrets.IG_SD_AT }}
+      IG_USER_1:  ${{ secrets.IG_SD_UN }}
 
     steps:
       - uses: actions/checkout@v4
@@ -33,73 +26,74 @@ jobs:
       - name: install jq
         run: sudo apt-get update && sudo apt-get install -y jq coreutils
 
-      - name: upload loop for 10 accounts
+      - name: upload loop
         shell: bash
         run: |
           set -euo pipefail
-          IFS=' ' read -r -a DIRS <<< "${MP4_DIRS}"
           repo="${GITHUB_REPOSITORY}"
+          IFS=' ' read -r -a DIRS <<< "${MP4_DIRS}"
 
           for idx in "${!DIRS[@]}"; do
             i=$((idx+1))
             FOLDER="${DIRS[idx]}"
-            echo "---- account $i -> folder: $FOLDER ----"
+            echo "----- ACCOUNT $i → FOLDER: $FOLDER -----"
 
+            # pick random mp4
             FILES=$(git ls-files "${FOLDER}"/*.mp4 2>/dev/null || true)
             if [ -z "$FILES" ]; then
-              echo "no mp4 in ${FOLDER}, skipping"
+              echo "no mp4 in folder: ${FOLDER} — skipping"
               continue
             fi
-
             PICK=$(echo "$FILES" | shuf -n1)
-            RAW="https://raw.githubusercontent.com/${repo}/${BRANCH}/${PICK}"
+            VIDEO_URL="https://raw.githubusercontent.com/${repo}/${BRANCH}/${PICK}"
 
+            # load secrets
             TOKEN_VAR="IG_TOKEN_${i}"
             USER_VAR="IG_USER_${i}"
-            TOKEN="${!TOKEN_VAR:-}"
-            USER="${!USER_VAR:-}"
-            echo "at- ${TOKEN} ."
-            echo "un- ${USER} ."
-            echo "token length: ${#TOKEN}"
+            IG_ACCESS_TOKEN="${!TOKEN_VAR:-}"
+            IG_USER_ID="${!USER_VAR:-}"
 
-
-            if [ -z "$TOKEN" ] || [ -z "$USER" ]; then
-              echo "missing secret for index $i, skipping"
+            if [ -z "$IG_ACCESS_TOKEN" ] || [ -z "$IG_USER_ID" ]; then
+              echo "missing token or user ID for account $i — skipping"
               continue
             fi
 
-            # ---- pick caption from THIS folder ----
+            # pick caption from folder’s captions.txt
             CAPTION_FILE="${FOLDER}/captions.txt"
-            if [ -f "${CAPTION_FILE}" ] && [ -s "${CAPTION_FILE}" ]; then
-              CAPTION=$(shuf -n1 "${CAPTION_FILE}")
+            if [ -f "$CAPTION_FILE" ] && [ -s "$CAPTION_FILE" ]; then
+              CAPTION=$(shuf -n1 "$CAPTION_FILE")
             else
               CAPTION="Auto upload from CI"
             fi
-            echo "caption: ${CAPTION}"
 
-            # create media container
-            RESP=$(curl -s -w "\n%{http_code}" -X POST "https://graph.instagram.com/v23.0/${USER}/media" \
-              -d "access_token=${TOKEN}" \
-              -d "video_url=${RAW}" \
-              -d "media_type=REELS" \
-              --data-urlencode "caption=${CAPTION}")
-            BODY=$(echo "$RESP" | sed '$d'); CODE=$(echo "$RESP" | tail -n1)
-            if [[ "$CODE" != "200" && "$CODE" != "201" ]]; then
-              echo "create failed (HTTP $CODE): $BODY"; continue
-            fi
-            CID=$(echo "$BODY" | jq -r '.id // empty')
-            [ -n "$CID" ] || { echo "no creation id; skipping"; continue; }
+            echo "Random caption selected:"
+            echo "$CAPTION"
 
-            # publish
-            RESP2=$(curl -s -w "\n%{http_code}" -X POST "https://graph.facebook.com/v17.0/${USER}/media_publish" \
-              -d "access_token=${TOKEN}" \
-              -d "creation_id=${CID}")
-            BODY2=$(echo "$RESP2" | sed '$d'); CODE2=$(echo "$RESP2" | tail -n1)
-            if [[ "$CODE2" != "200" && "$CODE2" != "201" ]]; then
-              echo "publish failed (HTTP $CODE2): $BODY2"; continue
+            # escape caption for JSON
+            CAP_ESCAPED=$(printf '%s' "$CAPTION" | jq -Rsa . | sed 's/^"//; s/"$//')
+
+            echo "Creating container…"
+
+            RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/${IG_USER_ID}/media" \
+                  -H "Content-Type: application/json" \
+                  -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
+                  -d "{\"video_url\":\"$VIDEO_URL\", \"media_type\":\"REELS\", \"caption\":\"$CAP_ESCAPED\"}")
+
+            echo "Create response: $RESPONSE"
+
+            CID=$(echo "$RESPONSE" | jq -r '.id // empty')
+            if [ -z "$CID" ]; then
+              echo "❌ Failed: No container ID"
+              continue
             fi
 
-            echo "success: account $i created ${CID}"
-            # optional: remove source file from repo after success
-            # git rm -f "$PICK" || true
+            echo "Publishing container id: $CID"
+
+            PUB=$(curl -s -X POST "https://graph.instagram.com/v23.0/${IG_USER_ID}/media_publish" \
+                  -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
+                  -d "creation_id=${CID}")
+
+            echo "Publish response: $PUB"
+
+            echo "✔ SUCCESS: Account $i uploaded container $CID"
           done
