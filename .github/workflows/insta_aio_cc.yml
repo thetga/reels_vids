@@ -81,7 +81,7 @@ jobs:
             RESP=$(curl -s -w "\n%{http_code}" -X POST "https://graph.instagram.com/v23.0/${USER}/media" \
               -d "access_token=${TOKEN}" \
               -d "video_url=${RAW}" \
-              -d "media_type=VIDEO" \
+              -d "media_type=REELS" \
               --data-urlencode "caption=${CAPTION}")
             BODY=$(echo "$RESP" | sed '$d'); CODE=$(echo "$RESP" | tail -n1)
             if [[ "$CODE" != "200" && "$CODE" != "201" ]]; then
