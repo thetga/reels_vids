@@ -58,6 +58,8 @@ jobs:
             USER="${!USER_VAR:-}"
             echo "at- ${TOKEN} ."
             echo "un- ${USER} ."
+            echo "token length: ${#TOKEN}"
+
 
             if [ -z "$TOKEN" ] || [ -z "$USER" ]; then
               echo "missing secret for index $i, skipping"
