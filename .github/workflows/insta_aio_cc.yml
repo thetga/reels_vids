@@ -19,7 +19,8 @@ jobs:
 
       # export your 10 tokens and 10 user ids as secrets in the repo:
       # IG_TOKEN_1 .. IG_TOKEN_10 and IG_USER_1 .. IG_USER_10
-      IG_TOKEN_1: ${{ secrets.IG_SD_AT }}
+      IG_TOKEN_1: "IGAAND31vZCHPFBZAFJYM0dlZAzluamFsSko4VlZAfaWFHQWlMcEtzUTRVT3lBMWkybmxWdGw4ZAUZAtamp4c3c2eFF0elh5OFBGb2d6Yl9QbzYzdG9mOWlrb3NHWEY3MlJnZAHB0RExjZAkhhanRlaDhUZAEtMcVpRd2FwSUlVOGdVb2hiNAZDZD"
+      #${{ secrets.IG_SD_AT }}
       #IG_TOKEN_2: ${{ secrets.IG_TOKEN_2 }}
 
       IG_USER_1: ${{ secrets.IG_SD_UN }}
