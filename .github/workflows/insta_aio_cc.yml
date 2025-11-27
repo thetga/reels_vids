@@ -56,8 +56,8 @@ jobs:
             USER_VAR="IG_USER_${i}"
             TOKEN="${!TOKEN_VAR:-}"
             USER="${!USER_VAR:-}"
-            echo "at- $TOKEN_VAR ."
-            echo "un- $USER ."
+            echo "at- ${TOKEN} ."
+            echo "un- ${USER} ."
 
             if [ -z "$TOKEN" ] || [ -z "$USER" ]; then
               echo "missing secret for index $i, skipping"
