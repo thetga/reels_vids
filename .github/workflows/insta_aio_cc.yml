@@ -1,7 +1,8 @@
 name: create-containers
 on:
   schedule:
-    - cron: '0 9 * * *'   # run at 09:00 UTC
+    - cron: '0 3 * * *'    # 09:00 IST
+    - cron: '0 15 * * *'   # 21:00 IST
   workflow_dispatch:
 
 permissions:
