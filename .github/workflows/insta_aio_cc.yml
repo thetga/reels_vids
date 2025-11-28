@@ -1,32 +1,49 @@
-name: multi-account-random-upload
+name: create-containers
 on:
-  workflow_dispatch:
   schedule:
-    - cron: '0 9 * * *'  # daily 09:00 UTC (adjust if needed)
+    - cron: '0 9 * * *'   # run at 09:00 UTC
+  workflow_dispatch:
 
 permissions:
   contents: write
 
 jobs:
-  upload:
+  create:
     runs-on: ubuntu-latest
     env:
-      # multiple folders → each folder = 1 account
-      # MP4_DIRS: "sd mp4s_b mp4s_c ..."
-      MP4_DIRS: "sd"
+      # space-separated folders; order maps to secrets IG_TOKEN_1..IG_TOKEN_10 and IG_USER_1..IG_USER_10
+      MP4_DIRS: "sd"   # change to your folders
       BRANCH: main
 
-      # 10 tokens max (example: IG_SD_AT = token for folder sd)
       IG_TOKEN_1: ${{ secrets.IG_SD_AT }}
+      IG_TOKEN_2: ${{ secrets.IG_TOKEN_2 }}
+      IG_TOKEN_3: ${{ secrets.IG_TOKEN_3 }}
+      IG_TOKEN_4: ${{ secrets.IG_TOKEN_4 }}
+      IG_TOKEN_5: ${{ secrets.IG_TOKEN_5 }}
+      IG_TOKEN_6: ${{ secrets.IG_TOKEN_6 }}
+      IG_TOKEN_7: ${{ secrets.IG_TOKEN_7 }}
+      IG_TOKEN_8: ${{ secrets.IG_TOKEN_8 }}
+      IG_TOKEN_9: ${{ secrets.IG_TOKEN_9 }}
+      IG_TOKEN_10: ${{ secrets.IG_TOKEN_10 }}
+
       IG_USER_1:  ${{ secrets.IG_SD_UN }}
+      IG_USER_2:  ${{ secrets.IG_USER_2 }}
+      IG_USER_3:  ${{ secrets.IG_USER_3 }}
+      IG_USER_4:  ${{ secrets.IG_USER_4 }}
+      IG_USER_5:  ${{ secrets.IG_USER_5 }}
+      IG_USER_6:  ${{ secrets.IG_USER_6 }}
+      IG_USER_7:  ${{ secrets.IG_USER_7 }}
+      IG_USER_8:  ${{ secrets.IG_USER_8 }}
+      IG_USER_9:  ${{ secrets.IG_USER_9 }}
+      IG_USER_10: ${{ secrets.IG_USER_10 }}
 
     steps:
       - uses: actions/checkout@v4
 
-      - name: install jq
+      - name: install tools
         run: sudo apt-get update && sudo apt-get install -y jq coreutils
 
-      - name: upload loop
+      - name: create containers and save json
         shell: bash
         run: |
           set -euo pipefail
@@ -36,64 +53,63 @@ jobs:
           for idx in "${!DIRS[@]}"; do
             i=$((idx+1))
             FOLDER="${DIRS[idx]}"
-            echo "----- ACCOUNT $i → FOLDER: $FOLDER -----"
+            echo "---- account $i -> folder: $FOLDER ----"
 
-            # pick random mp4
             FILES=$(git ls-files "${FOLDER}"/*.mp4 2>/dev/null || true)
             if [ -z "$FILES" ]; then
-              echo "no mp4 in folder: ${FOLDER} — skipping"
+              echo "no mp4 in ${FOLDER}, skipping"
               continue
             fi
+
             PICK=$(echo "$FILES" | shuf -n1)
             VIDEO_URL="https://raw.githubusercontent.com/${repo}/${BRANCH}/${PICK}"
 
-            # load secrets
             TOKEN_VAR="IG_TOKEN_${i}"
             USER_VAR="IG_USER_${i}"
             IG_ACCESS_TOKEN="${!TOKEN_VAR:-}"
             IG_USER_ID="${!USER_VAR:-}"
 
             if [ -z "$IG_ACCESS_TOKEN" ] || [ -z "$IG_USER_ID" ]; then
-              echo "missing token or user ID for account $i — skipping"
+              echo "missing secret for index $i, skipping"
               continue
             fi
 
-            # pick caption from folder’s captions.txt
-            CAPTION_FILE="${FOLDER}/captions.txt"
-            if [ -f "$CAPTION_FILE" ] && [ -s "$CAPTION_FILE" ]; then
-              CAPTION=$(shuf -n1 "$CAPTION_FILE")
+            # caption pick per-folder if exists
+            CAP_FILE="${FOLDER}/captions.txt"
+            if [ -f "$CAP_FILE" ] && [ -s "$CAP_FILE" ]; then
+              CAPTION=$(shuf -n1 "$CAP_FILE")
             else
               CAPTION="Auto upload from CI"
             fi
 
-            echo "Random caption selected:"
-            echo "$CAPTION"
-
-            # escape caption for JSON
+            # escape caption safely into JSON string (strip surrounding quotes later)
             CAP_ESCAPED=$(printf '%s' "$CAPTION" | jq -Rsa . | sed 's/^"//; s/"$//')
 
-            echo "Creating container…"
-
+            # create container using Authorization: Bearer and JSON body style
             RESPONSE=$(curl -s -X POST "https://graph.instagram.com/v23.0/${IG_USER_ID}/media" \
-                  -H "Content-Type: application/json" \
-                  -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
-                  -d "{\"video_url\":\"$VIDEO_URL\", \"media_type\":\"REELS\", \"caption\":\"$CAP_ESCAPED\"}")
+              -H "Content-Type: application/json" \
+              -H "Authorization: Bearer ${IG_ACCESS_TOKEN}" \
+              -d "{\"video_url\":\"${VIDEO_URL}\", \"media_type\":\"REELS\", \"caption\":\"${CAP_ESCAPED}\"}")
 
-            echo "Create response: $RESPONSE"
+            echo "Create response (trim): $(echo "$RESPONSE" | jq -c '. | {id: .id, error: .error?.message}')"
 
             CID=$(echo "$RESPONSE" | jq -r '.id // empty')
             if [ -z "$CID" ]; then
-              echo "❌ Failed: No container ID"
+              echo "no creation id for ${PICK}; skipping"
               continue
             fi
 
-            echo "Publishing container id: $CID"
+            # prepare container json file next to mp4: e.g., sd/video1.mp4 -> sd/video1.mp4.container.json
+            BASENAME=$(basename "$PICK")
+            OUT_JSON="${FOLDER}/${BASENAME}.container.json"
+            jq -n --arg id "$CID" --arg file "$PICK" --arg resp "$RESPONSE" \
+              '{creation_id:$id, file:$file, response:($resp|fromjson? // $resp)}' > "$OUT_JSON"
 
-            PUB=$(curl -s -X POST "https://graph.instagram.com/v23.0/${IG_USER_ID}/media_publish" \
-                  -H "Authorization: Bearer $IG_ACCESS_TOKEN" \
-                  -d "creation_id=${CID}")
+            git add "$OUT_JSON"
+            git config user.name "github-actions[bot]"
+            git config user.email "github-actions[bot]@users.noreply.github.com"
+            git commit -m "ci: add container json for ${PICK}" || echo "no changes to commit"
+            git push origin HEAD:${BRANCH} || echo "push failed (non-fatal)"
 
-            echo "Publish response: $PUB"
-
-            echo "✔ SUCCESS: Account $i uploaded container $CID"
+            echo "Saved container file: $OUT_JSON (creation_id: $CID)"
           done
