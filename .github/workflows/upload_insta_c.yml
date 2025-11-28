@@ -1,7 +1,8 @@
 name: publish-and-cleanup-simple
 on:
   schedule:
-    - cron: '30 9 * * *'   # run 09:30 UTC (30 minutes after creation)
+    - cron: '30 3 * * *'    # 09:00 IST
+    - cron: '30 15 * * *'   # 21:00 IST 
   workflow_dispatch:
 
 permissions:
