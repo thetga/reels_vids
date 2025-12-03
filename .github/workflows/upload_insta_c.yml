@@ -13,12 +13,12 @@ jobs:
     runs-on: ubuntu-latest
     env:
       # list folders in same order as create-containers.yml
-      MP4_DIRS: "sd"
+      MP4_DIRS: "sd ll"
       BRANCH: main
 
       # map secrets (expand as needed)
       IG_TOKEN_1: ${{ secrets.IG_SD_AT }}
-      IG_TOKEN_2: ${{ secrets.IG_TOKEN_2 }}
+      IG_TOKEN_2: ${{ secrets.IG_LL_AT }}
       IG_TOKEN_3: ${{ secrets.IG_TOKEN_3 }}
       IG_TOKEN_4: ${{ secrets.IG_TOKEN_4 }}
       IG_TOKEN_5: ${{ secrets.IG_TOKEN_5 }}
@@ -29,7 +29,7 @@ jobs:
       IG_TOKEN_10: ${{ secrets.IG_TOKEN_10 }}
 
       IG_USER_1:  ${{ secrets.IG_SD_UN }}
-      IG_USER_2:  ${{ secrets.IG_USER_2 }}
+      IG_USER_2:  ${{ secrets.IG_LL_UN }}
       IG_USER_3:  ${{ secrets.IG_USER_3 }}
       IG_USER_4:  ${{ secrets.IG_USER_4 }}
       IG_USER_5:  ${{ secrets.IG_USER_5 }}
