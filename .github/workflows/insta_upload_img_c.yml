@@ -1,0 +1,139 @@
+name: publish-and-cleanup-img
+on:
+  schedule:
+    - cron: '30 15 * * *'   # 21:00 IST 
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    env:
+      # list folders in same order as create-containers.yml
+      MP4_DIRS: "ts"
+      BRANCH: main
+
+      # map secrets (expand as needed)
+      IG_TOKEN_1: ${{ secrets.IG_TS_AT }}
+      IG_TOKEN_2: ${{ secrets.IG_LL_AT }}
+      IG_TOKEN_3: ${{ secrets.IG_TOKEN_3 }}
+      IG_TOKEN_4: ${{ secrets.IG_TOKEN_4 }}
+      IG_TOKEN_5: ${{ secrets.IG_TOKEN_5 }}
+      IG_TOKEN_6: ${{ secrets.IG_TOKEN_6 }}
+      IG_TOKEN_7: ${{ secrets.IG_TOKEN_7 }}
+      IG_TOKEN_8: ${{ secrets.IG_TOKEN_8 }}
+      IG_TOKEN_9: ${{ secrets.IG_TOKEN_9 }}
+      IG_TOKEN_10: ${{ secrets.IG_TOKEN_10 }}
+
+      IG_USER_1:  ${{ secrets.IG_TS_UN }}
+      IG_USER_2:  ${{ secrets.IG_LL_UN }}
+      IG_USER_3:  ${{ secrets.IG_USER_3 }}
+      IG_USER_4:  ${{ secrets.IG_USER_4 }}
+      IG_USER_5:  ${{ secrets.IG_USER_5 }}
+      IG_USER_6:  ${{ secrets.IG_USER_6 }}
+      IG_USER_7:  ${{ secrets.IG_USER_7 }}
+      IG_USER_8:  ${{ secrets.IG_USER_8 }}
+      IG_USER_9:  ${{ secrets.IG_USER_9 }}
+      IG_USER_10: ${{ secrets.IG_USER_10 }}
+
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: install jq
+        run: sudo apt-get update && sudo apt-get install -y jq coreutils
+
+      - name: publish container jsons (simple)
+        shell: bash
+        run: |
+          set -euo pipefail
+          IFS=' ' read -r -a DIRS <<< "${MP4_DIRS}"
+
+          for idx in "${!DIRS[@]}"; do
+            i=$((idx+1))
+            FOLDER="${DIRS[idx]}"
+            echo "== folder [$i]: $FOLDER =="
+
+            # find any container jsons in this folder
+            for C in $(git ls-files "${FOLDER}"/*.container.json 2>/dev/null || true); do
+              echo "processing $C"
+              CREATION_ID=$(jq -r '.creation_id' "$C")
+              MEDIA_FILE=$(jq -r '.file' "$C")
+
+              if [ -z "$CREATION_ID" ] || [ "$CREATION_ID" = "null" ]; then
+                echo "no creation_id in $C; removing json"
+                git rm -f "$C" || true
+                continue
+              fi
+
+              # pick corresponding secrets by index
+              TOKEN_VAR="IG_TOKEN_${i}"
+              USER_VAR="IG_USER_${i}"
+              IG_ACCESS_TOKEN="${!TOKEN_VAR:-}"
+              IG_USER_ID="${!USER_VAR:-}"
+
+              if [ -z "$IG_ACCESS_TOKEN" ] || [ -z "$IG_USER_ID" ]; then
+                echo "missing token/user for index $i; skip $C"
+                continue
+              fi
+
+              # poll until container ready
+              tries=0
+              max=20
+              sleep_s=6
+              while [ $tries -lt $max ]; do
+                S=$(curl -s -X GET "https://graph.instagram.com/v23.0/${CREATION_ID}?fields=status_code&access_token=${IG_ACCESS_TOKEN}" | jq -r '.status_code // empty')
+                echo "status: ${S:-unknown}"
+                if [ "$S" = "FINISHED" ] || [ "$S" = "finished" ]; then
+                  break
+                fi
+                if [ "$S" = "ERROR" ] || [ "$S" = "error" ]; then
+                  echo "processing error for $CREATION_ID"
+                  break
+                fi
+                tries=$((tries+1))
+                sleep $sleep_s
+              done
+
+              if [ $tries -ge $max ]; then
+                echo "timed out waiting for $CREATION_ID; skip publish for now"
+                continue
+              fi
+
+              # publish
+              PUB=$(curl -s -X POST "https://graph.instagram.com/v23.0/${IG_USER_ID}/media_publish" \
+                -H "Authorization: Bearer ${IG_ACCESS_TOKEN}" \
+                -d "creation_id=${CREATION_ID}")
+
+              ERR=$(echo "$PUB" | jq -r '.error?.message // empty')
+              if [ -n "$ERR" ]; then
+                echo "publish error: $ERR; leaving $C for retry"
+                continue
+              fi
+
+              echo "published: $CREATION_ID"
+
+              # remove json, png, and txt (if present in repo) and commit
+              git rm -f "$C" || true
+
+              if [ -n "$MEDIA_FILE" ] && git ls-files --error-unmatch "$MEDIA_FILE" >/dev/null 2>&1; then
+                git rm -f "$MEDIA_FILE" || true
+              fi
+
+              # caption file: abc.png -> abc.txt (same folder)
+              if [ -n "$MEDIA_FILE" ]; then
+                TXT_FILE="${MEDIA_FILE%.*}.txt"
+                if git ls-files --error-unmatch "$TXT_FILE" >/dev/null 2>&1; then
+                  git rm -f "$TXT_FILE" || true
+                fi
+              fi
+
+              git config user.name "github-actions[bot]"
+              git config user.email "github-actions[bot]@users.noreply.github.com"
+              git commit -m "ci: remove published container, image and caption ($MEDIA_FILE)" || echo "nothing to commit"
+              git push origin HEAD:${BRANCH} || echo "push failed (non-fatal)"
+            done
+          done
